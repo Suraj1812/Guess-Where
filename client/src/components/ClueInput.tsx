@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Alert, Autocomplete, Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Autocomplete, Button, Stack, TextField } from "@mui/material";
 import { CLUE_MAX_LENGTH } from "@shared/constants";
 import { COUNTRIES, type Country } from "@shared/countries";
+import InlineMessage from "./InlineMessage";
 
 interface ClueInputProps {
   roundNumber: number;
@@ -46,23 +47,15 @@ const ClueInput = ({ roundNumber, disabled, onSubmit }: ClueInputProps) => {
   };
 
   return (
-    <Stack spacing={2.5}>
-      <Box>
-        <Typography variant="h4" sx={{ mb: 1 }}>
-          Your turn to host
-        </Typography>
-        <Typography color="text.secondary">
-          Write one short clue and choose the country it refers to. Everyone else will guess from four options.
-        </Typography>
-      </Box>
-
+    <Stack className="section-stack">
       <TextField
         label="Short clue"
-        placeholder="Example: Desert skyscrapers and huge malls"
+        placeholder="Give a short location clue"
         value={clue}
         disabled={disabled || submitting}
         inputProps={{ maxLength: CLUE_MAX_LENGTH }}
         helperText={`${clue.length}/${CLUE_MAX_LENGTH}`}
+        FormHelperTextProps={{ sx: { textAlign: "right" } }}
         onChange={(event) => setClue(event.target.value)}
       />
 
@@ -79,7 +72,7 @@ const ClueInput = ({ roundNumber, disabled, onSubmit }: ClueInputProps) => {
         {submitting ? "Locking clue..." : "Start Guessing"}
       </Button>
 
-      {error ? <Alert severity="error">{error}</Alert> : null}
+      <InlineMessage message={error} />
     </Stack>
   );
 };

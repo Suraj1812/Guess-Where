@@ -22,7 +22,7 @@ const TimerBar = ({ endsAt, durationMs, label, color = "primary" }: TimerBarProp
     };
 
     update();
-    const intervalId = window.setInterval(update, 100);
+    const intervalId = window.setInterval(update, 200);
 
     return () => {
       window.clearInterval(intervalId);
@@ -34,15 +34,16 @@ const TimerBar = ({ endsAt, durationMs, label, color = "primary" }: TimerBarProp
   }
 
   const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
+  const remainingSeconds = Math.ceil(remainingMs / 1000);
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing={0.75}>
       <Stack direction="row" justifyContent="space-between">
         <Typography variant="body2" color="text.secondary">
           {label}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {(remainingMs / 1000).toFixed(1)}s
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+          {remainingSeconds}s
         </Typography>
       </Stack>
       <LinearProgress
@@ -50,9 +51,9 @@ const TimerBar = ({ endsAt, durationMs, label, color = "primary" }: TimerBarProp
         value={progress}
         color={color}
         sx={{
-          height: 10,
+          height: 8,
           borderRadius: 999,
-          backgroundColor: "rgba(255,255,255,0.08)"
+          backgroundColor: "rgba(203, 213, 225, 0.12)"
         }}
       />
     </Stack>

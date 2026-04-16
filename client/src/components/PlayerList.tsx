@@ -1,5 +1,4 @@
-import { Avatar, Chip, List, ListItem, ListItemAvatar, ListItemText, Paper, Stack, Typography } from "@mui/material";
-import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
+import { Avatar, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
 import type { PlayerSnapshot } from "@shared/types";
 
 interface PlayerListProps {
@@ -7,42 +6,45 @@ interface PlayerListProps {
 }
 
 const PlayerList = ({ players }: PlayerListProps) => (
-  <Paper className="surface-panel" elevation={0}>
-    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-      <Typography variant="h5">Players</Typography>
-      <Chip icon={<EmojiEventsRoundedIcon />} label={`${players.length} online`} variant="outlined" />
-    </Stack>
+  <Paper className="surface-panel game-section" elevation={0}>
+    <Stack spacing={1.5}>
+      <div className="section-heading">
+        <div>
+          <Typography variant="h3">Players</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {players.length} in the room
+          </Typography>
+        </div>
+        <Chip label={`${players.length} online`} variant="outlined" />
+      </div>
 
-    <List disablePadding>
-      {players.map((player, index) => (
-        <ListItem
-          key={player.id}
-          disableGutters
-          secondaryAction={
+      <Stack divider={<Divider flexItem sx={{ borderColor: "rgba(203, 213, 225, 0.08)" }} />}>
+        {players.map((player, index) => (
+          <div key={player.id} className="player-row">
+            <div className="player-main">
+              <Avatar sx={{ width: 38, height: 38, bgcolor: index === 0 ? "primary.main" : "secondary.main" }}>
+                {player.name.slice(0, 1).toUpperCase()}
+              </Avatar>
+              <div className="player-copy">
+                <Typography noWrap sx={{ fontWeight: 600 }}>
+                  {player.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {player.isHost ? "Current host" : index === 0 ? "Leading the room" : `Rank #${index + 1}`}
+                </Typography>
+              </div>
+            </div>
+
             <Stack direction="row" spacing={1} alignItems="center">
               {player.isHost ? <Chip size="small" color="primary" label="Host" /> : null}
-              <Chip size="small" label={`${player.score} pts`} />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {player.score} pts
+              </Typography>
             </Stack>
-          }
-          sx={{
-            py: 1.2,
-            px: 0,
-            borderBottom: index === players.length - 1 ? "none" : "1px solid rgba(255,255,255,0.06)"
-          }}
-        >
-          <ListItemAvatar>
-            <Avatar sx={{ bgcolor: index === 0 ? "primary.main" : "rgba(255,255,255,0.12)", color: "#06151f" }}>
-              {player.name.slice(0, 1).toUpperCase()}
-            </Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={player.name}
-            secondary={index === 0 ? "Leading the room" : `Rank #${index + 1}`}
-            secondaryTypographyProps={{ color: "text.secondary" }}
-          />
-        </ListItem>
-      ))}
-    </List>
+          </div>
+        ))}
+      </Stack>
+    </Stack>
   </Paper>
 );
 

@@ -1,4 +1,5 @@
-import { Alert, Box, Button, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import InlineMessage from "./InlineMessage";
 
 interface JoinFormProps {
   name: string;
@@ -23,30 +24,27 @@ const JoinForm = ({
   onCreatePrivateRoom,
   onJoinRoom
 }: JoinFormProps) => (
-  <Paper className="surface-panel join-panel" elevation={0}>
-    <Stack spacing={3}>
+  <Paper className="surface-panel join-screen" elevation={0}>
+    <Stack className="section-stack">
       <Box>
-        <Typography variant="overline" sx={{ color: "primary.main", letterSpacing: "0.25em" }}>
-          Realtime Multiplayer
-        </Typography>
-        <Typography variant="h1" sx={{ mb: 1.5, fontSize: { xs: "2.6rem", md: "3.4rem" } }}>
+        <Typography variant="h1" sx={{ mb: 1.5 }}>
           Guess Where
         </Typography>
         <Typography color="text.secondary">
-          One player drops a clue. Everyone else races to lock the right country before time runs out.
+          Play with anyone, guess the country, and answer fast to score more.
         </Typography>
       </Box>
 
-      <TextField
-        label="Display Name"
-        placeholder="Type a nickname"
-        value={name}
-        autoComplete="nickname"
-        inputProps={{ maxLength: 18 }}
-        onChange={(event) => onNameChange(event.target.value)}
-      />
+      <Stack className="form-actions">
+        <TextField
+          label="Display name"
+          placeholder="Your name"
+          value={name}
+          autoComplete="nickname"
+          inputProps={{ maxLength: 18 }}
+          onChange={(event) => onNameChange(event.target.value)}
+        />
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
         <Button
           fullWidth
           size="large"
@@ -54,8 +52,9 @@ const JoinForm = ({
           disabled={!name.trim() || loadingAction !== null}
           onClick={onPlayNow}
         >
-          {loadingAction === "matchmake" ? "Matching..." : "Play Now"}
+          {loadingAction === "matchmake" ? "Finding a room..." : "Play Now"}
         </Button>
+
         <Button
           fullWidth
           size="large"
@@ -63,32 +62,32 @@ const JoinForm = ({
           disabled={!name.trim() || loadingAction !== null}
           onClick={onCreatePrivateRoom}
         >
-          {loadingAction === "create" ? "Creating..." : "Create Private Room"}
+          {loadingAction === "create" ? "Creating room..." : "Create Private Room"}
         </Button>
+
+        <Box className="join-code-group">
+          <Typography className="join-code-label">Join with a room code</Typography>
+          <TextField
+            fullWidth
+            label="Room code"
+            placeholder="ABCDE"
+            value={roomCode}
+            inputProps={{ maxLength: 5 }}
+            onChange={(event) => onRoomCodeChange(event.target.value.toUpperCase())}
+          />
+          <Button
+            fullWidth
+            variant="outlined"
+            size="large"
+            disabled={!name.trim() || roomCode.trim().length < 5 || loadingAction !== null}
+            onClick={onJoinRoom}
+          >
+            {loadingAction === "join" ? "Joining room..." : "Join Room"}
+          </Button>
+        </Box>
+
+        <InlineMessage message={error} />
       </Stack>
-
-      <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-        <TextField
-          fullWidth
-          label="Room Code"
-          placeholder="ABCDE"
-          value={roomCode}
-          inputProps={{ maxLength: 5 }}
-          onChange={(event) => onRoomCodeChange(event.target.value.toUpperCase())}
-        />
-        <Button
-          variant="text"
-          size="large"
-          disabled={!name.trim() || roomCode.trim().length < 5 || loadingAction !== null}
-          onClick={onJoinRoom}
-        >
-          {loadingAction === "join" ? "Joining..." : "Join Room"}
-        </Button>
-      </Stack>
-
-      {error ? <Alert severity="error">{error}</Alert> : null}
     </Stack>
   </Paper>
 );

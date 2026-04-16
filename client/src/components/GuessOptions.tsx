@@ -13,13 +13,7 @@ const GuessOptions = ({ options, selectedCode, disabled, onSelect }: GuessOption
   const deferredSelection = useDeferredValue(selectedCode);
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-        gap: 2
-      }}
-    >
+    <Box className="option-list">
       {options.map((country) => {
         const isSelected = deferredSelection === country.code;
 
@@ -27,30 +21,27 @@ const GuessOptions = ({ options, selectedCode, disabled, onSelect }: GuessOption
           <Button
             key={country.code}
             className="option-card"
+            fullWidth
             variant={isSelected ? "contained" : "outlined"}
-            color={isSelected ? "primary" : "inherit"}
+            color={isSelected ? "primary" : "secondary"}
             disabled={disabled}
             onClick={() => onSelect(country.code)}
             sx={{
-              display: "flex",
-              minHeight: 116,
-              alignItems: "center",
-              justifyContent: "flex-start",
+              borderColor: isSelected ? "primary.main" : "rgba(203, 213, 225, 0.16)",
               gap: 2,
-              px: 2.4,
-              py: 2.2,
-              borderColor: isSelected ? "primary.main" : "rgba(255,255,255,0.14)"
+              px: 2,
+              py: 1.5
             }}
           >
             <Typography component="span" sx={{ fontSize: "2rem" }}>
               {country.flag}
             </Typography>
             <Stack alignItems="flex-start" spacing={0.5}>
-              <Typography component="span" variant="h6">
+              <Typography component="span" variant="body1" sx={{ fontWeight: 600 }}>
                 {country.name}
               </Typography>
               <Typography component="span" variant="body2" color="text.secondary">
-                Tap to lock your guess
+                Tap to choose
               </Typography>
             </Stack>
           </Button>
