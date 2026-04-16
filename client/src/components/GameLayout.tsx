@@ -136,8 +136,6 @@ const GameLayout = ({ session }: GameLayoutProps) => {
   const showCanvas =
     room.phase === "drawing" || room.phase === "results" || room.phase === "finished" || !room.viewer.isDrawer;
 
-  const typingPlayers = room.players.filter((player) => player.isTyping);
-
   return (
     <Box className="app-shell">
       <div ref={shellRef} className="game-shell">
@@ -273,7 +271,7 @@ const GameLayout = ({ session }: GameLayoutProps) => {
             <ScoreBoard players={room.players} />
             <ChatBox
               messages={room.chat}
-              players={typingPlayers.length > 0 ? room.players : room.players}
+              players={room.players}
               canGuess={room.viewer.canGuess && !session.connectionLost}
               isDrawer={room.viewer.isDrawer}
               isSpectator={room.viewer.isSpectator}
