@@ -1,0 +1,22 @@
+{
+  "name": "guess-where",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm --workspace server run dev\" \"npm --workspace client run dev\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm run build --workspace server && npm run build --workspace client",
+    "start": "concurrently \"npm --workspace server run start\" \"npm --workspace client run preview -- --host 127.0.0.1 --port 4173\"",
+    "verify": "npm run build && node scripts/verify-local.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
