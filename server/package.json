@@ -1,5 +1,5 @@
 {
-  "name": "guess-where-server",
+  "name": "draw-clash-server",
   "private": true,
   "type": "module",
   "scripts": {

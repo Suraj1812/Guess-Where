@@ -1,5 +1,4 @@
-import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
-import InlineMessage from "./InlineMessage";
+import { Button, Paper, Stack, TextField, Typography } from "@mui/material";
 
 interface JoinFormProps {
   name: string;
@@ -24,70 +23,60 @@ const JoinForm = ({
   onCreatePrivateRoom,
   onJoinRoom
 }: JoinFormProps) => (
-  <Paper className="surface-panel join-screen" elevation={0}>
-    <Stack className="section-stack">
-      <Box>
-        <Typography variant="h1" sx={{ mb: 1.5 }}>
-          Guess Where
-        </Typography>
+  <Paper className="join-card" elevation={0}>
+    <Stack className="join-stack">
+      <div className="join-logo">
+        <Typography variant="h1">Draw Clash</Typography>
         <Typography color="text.secondary">
-          Play with anyone, guess the country, and answer fast to score more.
+          Fast rooms, live drawing, loud guesses, and just enough chaos to make you queue again.
         </Typography>
-      </Box>
+      </div>
 
-      <Stack className="form-actions">
+      <TextField
+        label="Display name"
+        placeholder="Your drawing alias"
+        value={name}
+        autoComplete="nickname"
+        inputProps={{ maxLength: 18 }}
+        onChange={(event) => onNameChange(event.target.value)}
+      />
+
+      <Button fullWidth variant="contained" size="large" disabled={!name.trim() || loadingAction !== null} onClick={onPlayNow}>
+        {loadingAction === "matchmake" ? "Finding room..." : "Play Now"}
+      </Button>
+
+      <Button
+        fullWidth
+        variant="outlined"
+        size="large"
+        disabled={!name.trim() || loadingAction !== null}
+        onClick={onCreatePrivateRoom}
+      >
+        {loadingAction === "create" ? "Creating room..." : "Private Room"}
+      </Button>
+
+      <div className="join-room-row">
         <TextField
-          label="Display name"
-          placeholder="Your name"
-          value={name}
-          autoComplete="nickname"
-          inputProps={{ maxLength: 18 }}
-          onChange={(event) => onNameChange(event.target.value)}
+          label="Join code"
+          placeholder="ABCDE"
+          value={roomCode}
+          inputProps={{ maxLength: 5 }}
+          onChange={(event) => onRoomCodeChange(event.target.value.toUpperCase())}
         />
-
         <Button
           fullWidth
-          size="large"
-          variant="contained"
-          disabled={!name.trim() || loadingAction !== null}
-          onClick={onPlayNow}
-        >
-          {loadingAction === "matchmake" ? "Finding a room..." : "Play Now"}
-        </Button>
-
-        <Button
-          fullWidth
-          size="large"
           variant="outlined"
-          disabled={!name.trim() || loadingAction !== null}
-          onClick={onCreatePrivateRoom}
+          size="large"
+          disabled={!name.trim() || roomCode.trim().length < 5 || loadingAction !== null}
+          onClick={onJoinRoom}
         >
-          {loadingAction === "create" ? "Creating room..." : "Create Private Room"}
+          {loadingAction === "join" ? "Joining..." : "Join Room"}
         </Button>
+      </div>
 
-        <Box className="join-code-group">
-          <Typography className="join-code-label">Join with a room code</Typography>
-          <TextField
-            fullWidth
-            label="Room code"
-            placeholder="ABCDE"
-            value={roomCode}
-            inputProps={{ maxLength: 5 }}
-            onChange={(event) => onRoomCodeChange(event.target.value.toUpperCase())}
-          />
-          <Button
-            fullWidth
-            variant="outlined"
-            size="large"
-            disabled={!name.trim() || roomCode.trim().length < 5 || loadingAction !== null}
-            onClick={onJoinRoom}
-          >
-            {loadingAction === "join" ? "Joining room..." : "Join Room"}
-          </Button>
-        </Box>
-
-        <InlineMessage message={error} />
-      </Stack>
+      <Typography className="inline-note" color="error.main">
+        {error ?? "\u00A0"}
+      </Typography>
     </Stack>
   </Paper>
 );

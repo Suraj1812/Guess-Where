@@ -2,24 +2,45 @@ import { io, type Socket } from "socket.io-client";
 import { SOCKET_EVENTS } from "@shared/constants";
 import type {
   ActionAck,
+  ChooseWordRequest,
   ClientToServerEvents,
+  DrawEndRequest,
+  DrawMoveRequest,
+  DrawStartRequest,
+  EmojiReactionRequest,
+  GuessAck,
+  GuessRequest,
+  HeartbeatRequest,
   JoinAck,
+  JoinRequest,
+  JoinPrivateRoomRequest,
+  RejoinRoomRequest,
+  RoomActionRequest,
   ServerToClientEvents,
-  SubmitClueRequest,
-  SubmitGuessRequest
+  TypingStateRequest
 } from "@shared/types";
 
-export type GuessWhereSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+export type DrawClashSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-let socket: GuessWhereSocket | null = null;
+export interface StoredSession {
+  roomId: string;
+  participantId: string;
+  sessionId: string;
+  name: string;
+}
+
+const STORAGE_KEY = "draw-clash-session";
+
+let socket: DrawClashSocket | null = null;
 
 const getServerUrl = (): string => import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
 
-export const getSocket = (): GuessWhereSocket => {
+export const getSocket = (): DrawClashSocket => {
   if (!socket) {
     socket = io(getServerUrl(), {
       autoConnect: false,
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: 8,
       transports: ["websocket", "polling"]
     });
   }
@@ -37,7 +58,30 @@ export const resetSocket = (): void => {
   socket = null;
 };
 
-const connectSocket = async (): Promise<GuessWhereSocket> => {
+export const readStoredSession = (): StoredSession | null => {
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as StoredSession;
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+};
+
+export const persistSession = (session: StoredSession): void => {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+};
+
+export const clearStoredSession = (): void => {
+  window.localStorage.removeItem(STORAGE_KEY);
+};
+
+const connectSocket = async (): Promise<DrawClashSocket> => {
   const gameSocket = getSocket();
 
   if (gameSocket.connected) {
@@ -64,18 +108,17 @@ const connectSocket = async (): Promise<GuessWhereSocket> => {
 };
 
 const emitJoinEvent = async (
-  eventName: typeof SOCKET_EVENTS.joinGame | typeof SOCKET_EVENTS.createRoom | typeof SOCKET_EVENTS.joinRoom,
-  payload: { name: string; code?: string }
+  eventName:
+    | typeof SOCKET_EVENTS.joinGame
+    | typeof SOCKET_EVENTS.createRoom
+    | typeof SOCKET_EVENTS.joinRoom
+    | typeof SOCKET_EVENTS.rejoinRoom,
+  payload: JoinRequest | JoinPrivateRoomRequest | RejoinRoomRequest
 ): Promise<JoinAck> => {
   const gameSocket = await connectSocket();
 
   return new Promise((resolve) => {
-    if (eventName === SOCKET_EVENTS.joinRoom) {
-      gameSocket.emit(eventName, { name: payload.name, code: payload.code ?? "" }, resolve);
-      return;
-    }
-
-    gameSocket.emit(eventName, { name: payload.name }, resolve);
+    gameSocket.emit(eventName, payload as never, resolve);
   });
 };
 
@@ -88,26 +131,76 @@ export const createPrivateRoom = async (name: string): Promise<JoinAck> =>
 export const joinPrivateRoom = async (name: string, code: string): Promise<JoinAck> =>
   emitJoinEvent(SOCKET_EVENTS.joinRoom, { name, code });
 
-const emitAction = async (
-  eventName: typeof SOCKET_EVENTS.submitClue | typeof SOCKET_EVENTS.submitGuess,
-  payload: SubmitClueRequest | SubmitGuessRequest
-): Promise<ActionAck> => {
+export const rejoinRoom = async (
+  roomId: string,
+  sessionId: string,
+  name?: string
+): Promise<JoinAck> =>
+  emitJoinEvent(SOCKET_EVENTS.rejoinRoom, {
+    roomId,
+    sessionId,
+    name
+  });
+
+const emitAckAction = async <TRequest extends object, TAck extends ActionAck | GuessAck>(
+  eventName: string,
+  payload: TRequest
+): Promise<TAck> => {
   const gameSocket = getSocket();
 
   if (!gameSocket.connected) {
     return {
       ok: false,
       error: "Socket is not connected."
-    };
+    } as TAck;
   }
 
   return new Promise((resolve) => {
-    gameSocket.emit(eventName, payload as never, resolve);
+    (gameSocket.emit as (...args: unknown[]) => void)(eventName, payload, resolve);
   });
 };
 
-export const sendClue = async (payload: SubmitClueRequest): Promise<ActionAck> =>
-  emitAction(SOCKET_EVENTS.submitClue, payload);
+export const chooseWord = (payload: ChooseWordRequest): Promise<ActionAck> =>
+  emitAckAction<ChooseWordRequest, ActionAck>(SOCKET_EVENTS.chooseWord, payload);
 
-export const sendGuess = async (payload: SubmitGuessRequest): Promise<ActionAck> =>
-  emitAction(SOCKET_EVENTS.submitGuess, payload);
+export const sendDrawStart = (payload: DrawStartRequest): Promise<ActionAck> =>
+  emitAckAction<DrawStartRequest, ActionAck>(SOCKET_EVENTS.drawStart, payload);
+
+export const sendDrawMove = (payload: DrawMoveRequest): Promise<ActionAck> =>
+  emitAckAction<DrawMoveRequest, ActionAck>(SOCKET_EVENTS.drawMove, payload);
+
+export const sendDrawEnd = (payload: DrawEndRequest): Promise<ActionAck> =>
+  emitAckAction<DrawEndRequest, ActionAck>(SOCKET_EVENTS.drawEnd, payload);
+
+export const undoStroke = (payload: RoomActionRequest): Promise<ActionAck> =>
+  emitAckAction<RoomActionRequest, ActionAck>(SOCKET_EVENTS.undoStroke, payload);
+
+export const clearCanvas = (payload: RoomActionRequest): Promise<ActionAck> =>
+  emitAckAction<RoomActionRequest, ActionAck>(SOCKET_EVENTS.clearCanvas, payload);
+
+export const sendGuess = (payload: GuessRequest): Promise<GuessAck> =>
+  emitAckAction<GuessRequest, GuessAck>(SOCKET_EVENTS.sendGuess, payload);
+
+export const sendTypingState = (payload: TypingStateRequest): void => {
+  const gameSocket = getSocket();
+
+  if (gameSocket.connected) {
+    gameSocket.emit(SOCKET_EVENTS.typingState, payload);
+  }
+};
+
+export const sendReaction = (payload: EmojiReactionRequest): void => {
+  const gameSocket = getSocket();
+
+  if (gameSocket.connected) {
+    gameSocket.emit(SOCKET_EVENTS.emojiReaction, payload);
+  }
+};
+
+export const sendHeartbeat = (payload: HeartbeatRequest): void => {
+  const gameSocket = getSocket();
+
+  if (gameSocket.connected) {
+    gameSocket.emit(SOCKET_EVENTS.heartbeat, payload);
+  }
+};

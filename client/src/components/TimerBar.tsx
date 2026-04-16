@@ -5,10 +5,9 @@ interface TimerBarProps {
   endsAt: number | null;
   durationMs: number;
   label: string;
-  color?: "primary" | "secondary" | "success";
 }
 
-const TimerBar = ({ endsAt, durationMs, label, color = "primary" }: TimerBarProps) => {
+const TimerBar = ({ endsAt, durationMs, label }: TimerBarProps) => {
   const [remainingMs, setRemainingMs] = useState(0);
 
   useEffect(() => {
@@ -22,7 +21,7 @@ const TimerBar = ({ endsAt, durationMs, label, color = "primary" }: TimerBarProp
     };
 
     update();
-    const intervalId = window.setInterval(update, 200);
+    const intervalId = window.setInterval(update, 150);
 
     return () => {
       window.clearInterval(intervalId);
@@ -35,25 +34,25 @@ const TimerBar = ({ endsAt, durationMs, label, color = "primary" }: TimerBarProp
 
   const progress = Math.max(0, Math.min(100, (remainingMs / durationMs) * 100));
   const remainingSeconds = Math.ceil(remainingMs / 1000);
+  const pulseClassName = remainingSeconds <= 10 ? "countdown-pulse" : undefined;
 
   return (
-    <Stack spacing={0.75}>
-      <Stack direction="row" justifyContent="space-between">
+    <Stack spacing={0.75} className={pulseClassName}>
+      <Stack direction="row" justifyContent="space-between" gap={1}>
         <Typography variant="body2" color="text.secondary">
           {label}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
           {remainingSeconds}s
         </Typography>
       </Stack>
       <LinearProgress
         variant="determinate"
         value={progress}
-        color={color}
         sx={{
-          height: 8,
+          height: 9,
           borderRadius: 999,
-          backgroundColor: "rgba(203, 213, 225, 0.12)"
+          backgroundColor: "rgba(15, 23, 42, 0.44)"
         }}
       />
     </Stack>

@@ -21,7 +21,7 @@ app.use(express.json());
 app.get("/health", (_request, response) => {
   response.json({
     ok: true,
-    service: "guess-where-server"
+    service: "draw-clash-server"
   });
 });
 
@@ -48,12 +48,48 @@ io.on("connection", (socket) => {
     roomManager.joinPrivateRoom(socket, payload, ack);
   });
 
-  socket.on(SOCKET_EVENTS.submitClue, (payload, ack) => {
-    roomManager.submitClue(socket, payload, ack);
+  socket.on(SOCKET_EVENTS.rejoinRoom, (payload, ack) => {
+    roomManager.rejoinRoom(socket, payload, ack);
   });
 
-  socket.on(SOCKET_EVENTS.submitGuess, (payload, ack) => {
-    roomManager.submitGuess(socket, payload, ack);
+  socket.on(SOCKET_EVENTS.chooseWord, (payload, ack) => {
+    roomManager.chooseWord(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.drawStart, (payload, ack) => {
+    roomManager.drawStart(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.drawMove, (payload, ack) => {
+    roomManager.drawMove(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.drawEnd, (payload, ack) => {
+    roomManager.drawEnd(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.undoStroke, (payload, ack) => {
+    roomManager.undoStroke(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.clearCanvas, (payload, ack) => {
+    roomManager.clearCanvas(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.sendGuess, (payload, ack) => {
+    roomManager.sendGuess(socket, payload, ack);
+  });
+
+  socket.on(SOCKET_EVENTS.typingState, (payload) => {
+    roomManager.handleTypingState(socket, payload);
+  });
+
+  socket.on(SOCKET_EVENTS.emojiReaction, (payload) => {
+    roomManager.sendReaction(socket, payload);
+  });
+
+  socket.on(SOCKET_EVENTS.heartbeat, (payload) => {
+    roomManager.heartbeat(socket.id, payload.roomId);
   });
 
   socket.on("disconnect", () => {
@@ -66,10 +102,10 @@ const bootstrap = async (): Promise<void> => {
     await persistence.initialize();
 
     server.listen(PORT, () => {
-      console.log(`Guess Where server running on http://localhost:${PORT}`);
+      console.log(`Draw Clash server running on http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error("Failed to start Guess Where server", error);
+    console.error("Failed to start Draw Clash server", error);
     process.exit(1);
   }
 };

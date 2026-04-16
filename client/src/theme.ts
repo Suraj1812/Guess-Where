@@ -4,95 +4,95 @@ export const appTheme = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#2563eb"
+      main: "#38bdf8"
     },
     secondary: {
-      main: "#334155"
+      main: "#f59e0b"
+    },
+    success: {
+      main: "#22c55e"
+    },
+    error: {
+      main: "#fb7185"
     },
     background: {
       default: "#0f172a",
-      paper: "#111827"
-    },
-    success: {
-      main: "#16a34a"
-    },
-    warning: {
-      main: "#f59e0b"
-    },
-    error: {
-      main: "#ef4444"
+      paper: "#1e293b"
     },
     text: {
-      primary: "#e5e7eb",
+      primary: "#e2e8f0",
       secondary: "#94a3b8"
     }
   },
   shape: {
-    borderRadius: 16
+    borderRadius: 18
   },
   typography: {
     fontFamily: '"Space Grotesk", "Segoe UI", sans-serif',
     h1: {
+      fontFamily: '"Orbitron", "Space Grotesk", sans-serif',
       fontWeight: 700,
-      fontSize: "2.1rem",
-      letterSpacing: "-0.03em",
-      lineHeight: 1.1
+      fontSize: "2.2rem",
+      letterSpacing: "-0.04em",
+      lineHeight: 1
     },
     h2: {
+      fontFamily: '"Orbitron", "Space Grotesk", sans-serif',
       fontWeight: 700,
-      fontSize: "1.5rem",
-      letterSpacing: "-0.02em",
-      lineHeight: 1.15
+      fontSize: "1.35rem",
+      letterSpacing: "-0.03em"
     },
     h3: {
-      fontWeight: 600,
+      fontWeight: 700,
       fontSize: "1rem",
-      letterSpacing: "-0.01em",
-      lineHeight: 1.25
-    },
-    body1: {
-      lineHeight: 1.5
-    },
-    body2: {
-      lineHeight: 1.45
+      letterSpacing: "-0.02em"
     },
     button: {
-      fontWeight: 600,
-      fontSize: "0.95rem",
-      textTransform: "none"
+      fontWeight: 700,
+      textTransform: "none",
+      letterSpacing: "-0.01em"
     }
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: "#0f172a",
+          backgroundImage:
+            "radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 38%), radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.12), transparent 28%)"
+        }
+      }
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
           backgroundImage: "none",
-          border: `1px solid ${alpha("#cbd5e1", 0.12)}`,
-          boxShadow: "0 12px 28px rgba(2, 6, 23, 0.24)"
+          border: `1px solid ${alpha("#cbd5e1", 0.1)}`,
+          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.28)"
         }
       }
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          minHeight: 52,
+          minHeight: 48,
           borderRadius: 16,
-          paddingInline: 16,
           boxShadow: "none",
-          transition: "background-color 160ms ease, border-color 160ms ease, transform 160ms ease"
+          transition: "transform 160ms ease, background-color 160ms ease, border-color 160ms ease"
         },
         containedPrimary: {
-          backgroundColor: "#2563eb",
           "&:hover": {
-            backgroundColor: "#1d4ed8",
-            boxShadow: "none"
+            backgroundColor: "#0ea5e9",
+            boxShadow: "none",
+            transform: "translateY(-1px)"
           }
         },
         outlined: {
-          borderColor: alpha("#cbd5e1", 0.24),
+          borderColor: alpha("#cbd5e1", 0.18),
           "&:hover": {
-            borderColor: alpha("#cbd5e1", 0.36),
-            backgroundColor: alpha("#1e293b", 0.5)
+            borderColor: alpha("#38bdf8", 0.45),
+            backgroundColor: alpha("#38bdf8", 0.08),
+            transform: "translateY(-1px)"
           }
         }
       }
@@ -100,31 +100,19 @@ export const appTheme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          minHeight: 52,
+          minHeight: 48,
           borderRadius: 16,
-          backgroundColor: alpha("#0f172a", 0.78),
+          backgroundColor: alpha("#0f172a", 0.52),
           "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: alpha("#cbd5e1", 0.16)
+            borderColor: alpha("#cbd5e1", 0.14)
           },
           "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: alpha("#cbd5e1", 0.26)
+            borderColor: alpha("#38bdf8", 0.28)
           },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#2563eb",
-            borderWidth: 1
+            borderWidth: 1,
+            borderColor: "#38bdf8"
           }
-        },
-        input: {
-          paddingBlock: 14
-        }
-      }
-    },
-    MuiFormHelperText: {
-      styleOverrides: {
-        root: {
-          minHeight: 20,
-          marginLeft: 0,
-          marginRight: 0
         }
       }
     },
@@ -132,18 +120,15 @@ export const appTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 999,
-          height: 30,
-          backgroundColor: alpha("#1e293b", 0.9)
-        },
-        outlined: {
-          borderColor: alpha("#cbd5e1", 0.16)
+          height: 32,
+          backgroundColor: alpha("#0f172a", 0.55)
         }
       }
     },
     MuiDialog: {
       styleOverrides: {
         paper: {
-          borderRadius: 18
+          borderRadius: 24
         }
       }
     }

@@ -1,38 +1,59 @@
-import type { Country } from "../../../shared/countries.js";
-import type { RoomPhase } from "../../../shared/types.js";
+import type {
+  ChatMessage,
+  ReactionBurst,
+  RoomPhase,
+  StrokeSnapshot,
+  WordEntry
+} from "../../../shared/types.js";
 
-export interface Player {
+export interface Participant {
   id: string;
-  socketId: string;
+  sessionId: string;
+  socketId: string | null;
   name: string;
-  score: number;
   joinedAt: number;
+  lastSeenAt: number;
+  lastInteractionAt: number;
+  isConnected: boolean;
+  isTyping: boolean;
+  guessCooldownUntil: number;
+  disconnectTimeout: NodeJS.Timeout | null;
 }
 
+export interface Player extends Participant {
+  score: number;
+}
+
+export interface Spectator extends Participant {}
+
 export interface GuessRecord {
-  countryCode: string;
+  guess: string;
   submittedAt: number;
+  scoreAwarded: number;
 }
 
 export interface RoundState {
   number: number;
-  hostId: string;
-  hostName: string;
-  clue: string;
-  answer: Country | null;
-  options: Country[];
-  phase: Exclude<RoomPhase, "waiting">;
-  clueDeadlineAt: number | null;
-  guessStartedAt: number | null;
-  guessDeadlineAt: number | null;
-  guesses: Map<string, GuessRecord>;
+  totalRounds: number;
+  drawerId: string;
+  drawerName: string;
+  phase: Exclude<RoomPhase, "waiting" | "finished">;
+  wordChoices: WordEntry[];
+  word: WordEntry | null;
+  choiceDeadlineAt: number | null;
+  startedAt: number | null;
+  endsAt: number | null;
+  strokes: StrokeSnapshot[];
+  activeStrokes: Map<string, StrokeSnapshot>;
+  correctGuesses: Map<string, GuessRecord>;
 }
 
 export interface RoomTimers {
   startTimeout: NodeJS.Timeout | null;
-  clueTimeout: NodeJS.Timeout | null;
-  guessTimeout: NodeJS.Timeout | null;
-  nextRoundTimeout: NodeJS.Timeout | null;
+  choiceTimeout: NodeJS.Timeout | null;
+  roundTimeout: NodeJS.Timeout | null;
+  nextTurnTimeout: NodeJS.Timeout | null;
+  restartTimeout: NodeJS.Timeout | null;
 }
 
 export interface Room {
@@ -41,9 +62,15 @@ export interface Room {
   isPrivate: boolean;
   phase: RoomPhase;
   players: Player[];
+  spectators: Spectator[];
   minPlayersToStart: number;
   maxPlayers: number;
+  totalRounds: number;
+  turnOrder: string[];
+  turnIndex: number;
   currentRound: RoundState | null;
-  lastHostId: string | null;
+  chat: ChatMessage[];
+  recentReactions: ReactionBurst[];
+  winner: { id: string; name: string; score: number } | null;
   timers: RoomTimers;
 }

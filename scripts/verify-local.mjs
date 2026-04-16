@@ -6,17 +6,22 @@ import { io } from "socket.io-client";
 
 const rootDir = new URL("..", import.meta.url);
 const serverUrl = "http://127.0.0.1:3001";
-const clientUrl = "http://127.0.0.1:4173";
+const clientUrl = "http://127.0.0.1:4175";
 const serverEntry = fileURLToPath(new URL("./server/dist/server/src/index.js", rootDir));
 const viteEntry = fileURLToPath(new URL("./node_modules/vite/bin/vite.js", rootDir));
 const clientDir = fileURLToPath(new URL("./client/", rootDir));
+
 const SOCKET_EVENTS = {
   createRoom: "create_room",
   joinRoom: "join_room",
   startRound: "start_round",
-  submitClue: "submit_clue",
-  submitGuess: "submit_guess",
-  roundResult: "round_result"
+  roomUpdated: "room_updated",
+  chooseWord: "choose_word",
+  drawStart: "draw_start",
+  drawMove: "draw_move",
+  drawEnd: "draw_end",
+  sendGuess: "send_guess",
+  roundEnd: "round_end"
 };
 
 const childProcesses = [];
@@ -77,7 +82,7 @@ const waitFor = async (check, description, timeoutMs = 30_000) => {
         return;
       }
     } catch {
-      // Keep polling until timeout.
+      // keep polling
     }
 
     await delay(500);
@@ -133,34 +138,24 @@ const emitWithAck = (socket, eventName, payload) =>
     });
   });
 
-const waitForSocketEvent = (sockets, eventName, matcher = () => true, timeoutMs = 15_000) =>
+const waitForSocketEvent = (socket, eventName, matcher = () => true, timeoutMs = 15_000) =>
   new Promise((resolve, reject) => {
-    const listeners = [];
     const timeoutId = setTimeout(() => {
-      cleanupListeners();
+      socket.off(eventName, handler);
       reject(new Error(`Timed out waiting for ${eventName}`));
     }, timeoutMs);
 
-    const cleanupListeners = () => {
-      clearTimeout(timeoutId);
-      for (const [socket, handler] of listeners) {
-        socket.off(eventName, handler);
+    const handler = (payload) => {
+      if (!matcher(payload)) {
+        return;
       }
+
+      clearTimeout(timeoutId);
+      socket.off(eventName, handler);
+      resolve(payload);
     };
 
-    for (const socket of sockets) {
-      const handler = (payload) => {
-        if (!matcher(payload)) {
-          return;
-        }
-
-        cleanupListeners();
-        resolve(payload);
-      };
-
-      listeners.push([socket, handler]);
-      socket.on(eventName, handler);
-    }
+    socket.on(eventName, handler);
   });
 
 const runSocketSmokeTest = async () => {
@@ -170,82 +165,110 @@ const runSocketSmokeTest = async () => {
   const bravo = await connectSocket("Bravo");
 
   try {
+    const alphaRoundPromise = waitForSocketEvent(alpha, SOCKET_EVENTS.startRound);
+    const bravoRoundPromise = waitForSocketEvent(bravo, SOCKET_EVENTS.startRound);
+
     const createResponse = await emitWithAck(alpha, SOCKET_EVENTS.createRoom, {
       name: "Alpha"
     });
 
-    if (!createResponse?.ok || !createResponse.room || !createResponse.playerId) {
+    if (!createResponse?.ok || !createResponse.room) {
       throw new Error(createResponse?.error ?? "Failed to create private room");
     }
 
-    const roomCode = createResponse.room.code;
-    const startRoundPromise = waitForSocketEvent(
-      [alpha, bravo],
-      SOCKET_EVENTS.startRound,
-      (payload) => payload?.room?.phase === "clue"
-    );
-
     const joinResponse = await emitWithAck(bravo, SOCKET_EVENTS.joinRoom, {
       name: "Bravo",
-      code: roomCode
+      code: createResponse.room.code
     });
 
-    if (!joinResponse?.ok || !joinResponse.room || !joinResponse.playerId) {
+    if (!joinResponse?.ok || !joinResponse.room) {
       throw new Error(joinResponse?.error ?? "Failed to join private room");
     }
 
-    const clueRound = await startRoundPromise;
-    const round = clueRound.room.currentRound;
+    const [alphaRound, bravoRound] = await Promise.all([alphaRoundPromise, bravoRoundPromise]);
+    const drawerPayload = alphaRound.room.viewer.isDrawer ? alphaRound : bravoRound;
+    const guesserSocket = alphaRound.room.viewer.isDrawer ? bravo : alpha;
+    const drawerSocket = alphaRound.room.viewer.isDrawer ? alpha : bravo;
+    const chosenWord = drawerPayload.room.viewer.wordChoices[0]?.text;
 
-    if (!round?.hostId) {
-      throw new Error("Round started without a host");
+    if (!chosenWord) {
+      throw new Error("Drawer did not receive word choices");
     }
 
-    const hostSocket = round.hostId === createResponse.playerId ? alpha : bravo;
-    const guessSocket = round.hostId === createResponse.playerId ? bravo : alpha;
-    const guessingRoundPromise = waitForSocketEvent(
-      [alpha, bravo],
-      SOCKET_EVENTS.startRound,
-      (payload) => payload?.room?.phase === "guessing"
+    const drawingUpdatePromise = waitForSocketEvent(
+      alphaRound.room.viewer.isDrawer ? bravo : alpha,
+      SOCKET_EVENTS.roomUpdated,
+      (payload) => payload?.room?.phase === "drawing"
     );
 
-    const clueAck = await emitWithAck(hostSocket, SOCKET_EVENTS.submitClue, {
-      roomId: clueRound.room.id,
-      clue: "Taj Mahal and giant festivals",
-      countryCode: "IN"
+    const chooseAck = await emitWithAck(drawerSocket, SOCKET_EVENTS.chooseWord, {
+      roomId: drawerPayload.room.id,
+      word: chosenWord
     });
 
-    if (!clueAck?.ok) {
-      throw new Error(clueAck?.error ?? "Host clue submission failed");
+    if (!chooseAck?.ok) {
+      throw new Error(chooseAck?.error ?? "Drawer could not choose a word");
     }
 
-    const guessingRound = await guessingRoundPromise;
-    const options = guessingRound.room.currentRound?.options ?? [];
+    await drawingUpdatePromise;
 
-    if (options.length !== 4 || !options.some((option) => option.code === "IN")) {
-      throw new Error("Guess options were not generated correctly");
-    }
-
-    const resultPromise = waitForSocketEvent([alpha, bravo], SOCKET_EVENTS.roundResult);
-    const guessAck = await emitWithAck(guessSocket, SOCKET_EVENTS.submitGuess, {
-      roomId: guessingRound.room.id,
-      countryCode: "IN"
+    const strokeId = "verify-stroke-1";
+    const drawStartAck = await emitWithAck(drawerSocket, SOCKET_EVENTS.drawStart, {
+      roomId: drawerPayload.room.id,
+      strokeId,
+      point: { x: 80, y: 90 },
+      color: "#111827",
+      size: 8,
+      tool: "pencil"
     });
 
-    if (!guessAck?.ok) {
-      throw new Error(guessAck?.error ?? "Guess submission failed");
+    if (!drawStartAck?.ok) {
+      throw new Error(drawStartAck?.error ?? "draw_start failed");
     }
 
-    const resultPayload = await resultPromise;
-    const correctCountry = resultPayload?.correctCountry;
-    const winningEntry = resultPayload?.results?.find((entry) => entry.isCorrect);
+    await emitWithAck(drawerSocket, SOCKET_EVENTS.drawMove, {
+      roomId: drawerPayload.room.id,
+      strokeId,
+      point: { x: 180, y: 160 }
+    });
 
-    if (correctCountry?.code !== "IN") {
-      throw new Error("Round result returned the wrong country");
+    const drawEndEventPromise = waitForSocketEvent(
+      guesserSocket,
+      SOCKET_EVENTS.drawEnd,
+      (payload) => payload?.stroke?.id === strokeId
+    );
+
+    await emitWithAck(drawerSocket, SOCKET_EVENTS.drawEnd, {
+      roomId: drawerPayload.room.id,
+      strokeId,
+      point: { x: 240, y: 220 }
+    });
+
+    await drawEndEventPromise;
+
+    const roundEndPromise = waitForSocketEvent(guesserSocket, SOCKET_EVENTS.roundEnd);
+    const guessAck = await emitWithAck(guesserSocket, SOCKET_EVENTS.sendGuess, {
+      roomId: drawerPayload.room.id,
+      guess: chosenWord
+    });
+
+    if (!guessAck?.ok || !guessAck?.correct) {
+      throw new Error(guessAck?.error ?? "Correct guess was not accepted");
     }
 
-    if (!winningEntry || winningEntry.pointsEarned <= 0) {
-      throw new Error("Correct guess did not award points");
+    const roundEnd = await roundEndPromise;
+    const winningEntry = roundEnd?.results?.find((entry) => entry.playerName === "Bravo" || entry.playerName === "Alpha");
+
+    if (!roundEnd?.word || roundEnd.word.text.toLowerCase() !== chosenWord.toLowerCase()) {
+      throw new Error("Round end did not reveal the correct word");
+    }
+
+    if (!winningEntry || !roundEnd.results.some((entry) => entry.isCorrect && entry.scoreDelta > 0)) {
+      throw new Error("Round end did not award points to a correct guesser");
+    }
+
+    if (!roundEnd.results.some((entry) => entry.isDrawer && entry.scoreDelta > 0)) {
+      throw new Error("Drawer did not receive a bonus");
     }
 
     log("smoke", "socket smoke test passed");
@@ -256,27 +279,22 @@ const runSocketSmokeTest = async () => {
 };
 
 const main = async () => {
-  const server = startProcess("server", process.execPath, [serverEntry]);
-  const client = startProcess("client", process.execPath, [
-    viteEntry,
-    "preview",
-    "--host",
-    "127.0.0.1",
-    "--port",
-    "4173"
-  ], clientDir);
-
-  void server;
-  void client;
+  startProcess("server", process.execPath, [serverEntry]);
+  startProcess(
+    "client",
+    process.execPath,
+    [viteEntry, "preview", "--host", "127.0.0.1", "--port", "4175", "--strictPort"],
+    clientDir
+  );
 
   await waitFor(async () => {
     const body = await fetchText(`${serverUrl}/health`);
-    return body.includes('"ok":true');
+    return body.includes('"service":"draw-clash-server"');
   }, "backend health endpoint");
 
   await waitFor(async () => {
     const body = await fetchText(clientUrl);
-    return body.includes("<title>Guess Where</title>");
+    return body.includes("<title>Draw Clash</title>");
   }, "frontend preview");
 
   await runSocketSmokeTest();

@@ -1,13 +1,31 @@
-# Guess Where
+# Draw Clash
 
-A real-time multiplayer country guessing game built with React, Material UI, Express, and Socket.io.
+Draw Clash is a realtime multiplayer browser drawing game inspired by the quick energy of party sketch games, rebuilt with a fully original flow and a polished dark UI.
 
-## Requirements
+## Stack
 
-- Node.js 20+
-- npm 10+
+- React 19 + Vite + Material UI
+- Node.js + Express + Socket.io
+- Optional PostgreSQL persistence
+- Shared TypeScript contracts across client and server
 
-`nvm use` will pick up the included `.nvmrc`.
+## Gameplay
+
+- Join with a display name only
+- Get matched into a public room or create a private code
+- One player becomes the drawer each turn
+- The drawer picks 1 of 3 words from a 1000+ word bank
+- Everyone else guesses in the live chat
+- Correct guessers score for speed, and the drawer earns bonus points
+- The game rotates through multiple turns and declares a winner
+
+## Features
+
+- Realtime synchronized drawing canvas
+- Pencil, eraser, brush sizes, color picker, undo, and clear canvas
+- Live guessing chat with close-guess detection and spam protection
+- Sound effects, emoji reactions, typing indicators, spectator mode, copy room code, fullscreen mode
+- Reconnect support and AFK cleanup
 
 ## Quick Start
 
@@ -16,14 +34,6 @@ A real-time multiplayer country guessing game built with React, Material UI, Exp
 3. Run `npm run dev`
 4. Open `http://localhost:5173`
 
-No environment file is required for the default local flow. The backend defaults to `http://localhost:3001`, and Postgres persistence stays optional.
-
-## Verify Locally
-
-- `npm run build` - production build for client and server
-- `npm run verify` - builds the app, starts the backend plus frontend preview, checks the page loads, and runs a realtime Socket.io smoke test
-- `npm run start` - runs the built backend and frontend preview together
-
 ## Scripts
 
 - `npm run dev` - client + server in watch mode
@@ -31,22 +41,22 @@ No environment file is required for the default local flow. The backend defaults
 - `npm run dev:server` - Express + Socket.io server only
 - `npm run build` - production builds
 - `npm run start` - production-style local run after build
-- `npm run verify` - automated end-to-end local smoke test
+- `npm run verify` - automated end-to-end smoke test for the Draw Clash flow
 
-The repo also includes a GitHub Actions workflow that runs `npm run verify` on pushes and pull requests.
+## Verify Locally
 
-## Stack
+- `npm run build`
+- `npm run verify`
 
-- React 19 + Vite + Material UI
-- Node.js + Express + Socket.io
-- Optional PostgreSQL persistence
+The verify script builds both apps, starts the backend and Vite preview, then exercises a realtime private-room match where a drawer chooses a word, sends drawing events, and another player guesses correctly.
 
 ## Project Structure
 
 - `client` - React frontend
-- `server` - Express and Socket.io backend
-- `shared` - shared constants, event names, and TypeScript contracts
+- `server` - Express + Socket.io backend
+- `shared` - shared constants, events, types, and word data
 - `database` - optional PostgreSQL schema
+- `scripts` - local verification helpers
 
 ## Environment
 
@@ -54,15 +64,4 @@ The repo also includes a GitHub Actions workflow that runs `npm run verify` on p
 - `CLIENT_ORIGIN` - frontend origin for Socket.io CORS
 - `DATABASE_URL` - optional Postgres connection string
 
-For custom local setup, copy `server/.env.example` to `server/.env`. The client can also use `client/.env.example` if you want to point the frontend at a different backend URL.
-
-## Gameplay Notes
-
-- Public matchmaking rooms auto-start when 4 players are present
-- Private rooms auto-start when 2 players are present
-- Hosts submit a short clue and choose the country their clue refers to
-- Guessers score base points plus a speed bonus
-
-## Optional PostgreSQL
-
-Persistence is optional. If `DATABASE_URL` is set, run the schema in `database/schema.sql` first. Without it, the game still runs fully in memory.
+By default, local development works without any environment files. Optional examples live in `server/.env.example` and `client/.env.example`.
